@@ -1,4 +1,4 @@
-import shapeless.{::, HList, HNil, LabelledGeneric, Witness}
+import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness}
 import shapeless.labelled.FieldType
 
 /**
@@ -57,19 +57,19 @@ package object map_representation {
     override def toMap(value: HNil): Map[String, Any] = Map.empty
   }
 
-  implicit def labelledGenericMapRepresentation[Value, Repr](implicit generic: LabelledGeneric.Aux[Value, Repr], hlistPackaging : MapRepresentation[Repr] ): MapRepresentation[Value] = new MapRepresentation[Value]{
+  implicit def labelledGenericMapRepresentation[Value, Repr](implicit generic: LabelledGeneric.Aux[Value, Repr], hlistPackaging : Lazy[MapRepresentation[Repr]] ): MapRepresentation[Value] = new MapRepresentation[Value]{
     override def toMap(value: Value): Map[String, Any] = {
       val asGeneric: Repr = generic.to(value)
-      hlistPackaging.toMap(asGeneric)
+      hlistPackaging.value.toMap(asGeneric)
     }
   }
 
-  implicit def hListMapRepresentation[Key <: Symbol, Head, Tail <: HList](implicit makeUntyped: ValueRepresentation[Head], witness: Witness.Aux[Key], tailPackaging: MapRepresentation[Tail]) : MapRepresentation[FieldType[Key, Head]::Tail] = new MapRepresentation[FieldType[Key, Head]::Tail]{
+  implicit def hListMapRepresentation[Key <: Symbol, Head, Tail <: HList](implicit makeUntyped: Lazy[ValueRepresentation[Head]], witness: Witness.Aux[Key], tailPackaging: Lazy[MapRepresentation[Tail]]) : MapRepresentation[FieldType[Key, Head]::Tail] = new MapRepresentation[FieldType[Key, Head]::Tail]{
     override def toMap(value: FieldType[Key, Head]::Tail): Map[String, Any] = {
       val tailValue = value.tail
-      val encoded: Map[String, Any] = tailPackaging.toMap(tailValue)
+      val encoded: Map[String, Any] = tailPackaging.value.toMap(tailValue)
       val key : String = witness.value.name
-      encoded + (key -> makeUntyped.toValue(value.head))
+      encoded + (key -> makeUntyped.value.toValue(value.head))
     }
   }
 
