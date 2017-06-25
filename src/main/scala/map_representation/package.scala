@@ -1,9 +1,6 @@
 import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness}
 import shapeless.labelled.FieldType
 
-/**
-  * Created by jp on 23.06.17.
-  */
 package object map_representation {
 
   /*
