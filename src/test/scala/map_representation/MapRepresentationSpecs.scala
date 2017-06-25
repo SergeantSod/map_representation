@@ -52,32 +52,48 @@ class MapRepresentationSpecs extends FunSpec with Matchers with PropertyChecks w
     }
   }
 
-  case class CaseClassWithNestedMembers(flatCaseClassMember: FlatCaseClass, mapMember: Map[String, Double])
+  case class CaseClassWithNestedMember(flatCaseClassMember: FlatCaseClass)
 
-  implicit val arbitraryCaseClassWithNestedMembers : Arbitrary[CaseClassWithNestedMembers] = Arbitrary{
-    for {
-      flatCaseClassMember <- arbitrary[FlatCaseClass]
-      mapMember <- arbitrary[Map[String, Double]]
-    } yield CaseClassWithNestedMembers(flatCaseClassMember, mapMember)
-  }
+  implicit val arbitraryCaseClassWithNestedMembers : Arbitrary[CaseClassWithNestedMember] = Arbitrary{ arbitrary[FlatCaseClass].map(CaseClassWithNestedMember(_)) }
 
   it("converts instances of case classes with nested case class members"){
-    forAll{ someNestedCaseClassInstance : CaseClassWithNestedMembers =>
+    forAll{ someInstance : CaseClassWithNestedMember =>
 
-      val outerRepresentation = MapRepresentation[CaseClassWithNestedMembers]
+      val outerRepresentation = MapRepresentation[CaseClassWithNestedMember]
       val flatCaseClassRepresentation = MapRepresentation[FlatCaseClass]
-      val mapRepresentation = MapRepresentation[Map[String, Double]]
 
-      outerRepresentation.toMap(someNestedCaseClassInstance) should ===(
+      outerRepresentation.toMap(someInstance) should ===(
         Map(
-          "flatCaseClassMember" -> flatCaseClassRepresentation.toMap(someNestedCaseClassInstance.flatCaseClassMember),
-          "mapMember" -> mapRepresentation.toMap(someNestedCaseClassInstance.mapMember)
+          "flatCaseClassMember" -> flatCaseClassRepresentation.toMap(someInstance.flatCaseClassMember)
         )
       )
     }
   }
 
+  case class CaseClassWithCollectionMembers(setMember: Set[FlatCaseClass], listMember: List[FlatCaseClass], mapMember: Map[String, FlatCaseClass])
 
-  it("converts instances of case classes with collection members")(pending)
+  implicit val arbitraryCaseClassWithCollectionMembers : Arbitrary[CaseClassWithCollectionMembers] = Arbitrary{
+    for {
+      setMember <- arbitrary[Set[FlatCaseClass]]
+      listMember <- arbitrary[List[FlatCaseClass]]
+      mapMember <- arbitrary[Map[String,FlatCaseClass]]
+    } yield CaseClassWithCollectionMembers(setMember, listMember, mapMember)
+  }
+
+
+  it("converts instances of case classes with collection members"){
+    forAll{ someInstance : CaseClassWithCollectionMembers =>
+      val outerRepresentation = MapRepresentation[CaseClassWithCollectionMembers]
+      val flatCaseClassRepresentation = MapRepresentation[FlatCaseClass]
+
+      outerRepresentation.toMap(someInstance) should ===(
+        Map(
+          "setMember" -> someInstance.setMember.map(flatCaseClassRepresentation.toMap),
+          "listMember" -> someInstance.listMember.map(flatCaseClassRepresentation.toMap),
+          "mapMember" -> someInstance.mapMember.mapValues(flatCaseClassRepresentation.toMap)
+        )
+      )
+    }
+  }
 
 }

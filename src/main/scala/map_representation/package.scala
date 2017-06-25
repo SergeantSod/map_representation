@@ -6,6 +6,12 @@ import shapeless.labelled.FieldType
   */
 package object map_representation {
 
+  /*
+    Type class for representing something as an untyped Map[String, Any]
+    Instances for case classes are derived automatically via shapeless.
+    The conversions to Map is a deep conversion, i.e. any enclosing members are converted, too.
+    Specifically, members of type Set, Map or Seq are converted recursively as well.
+   */
   trait MapRepresentation[Value]{
     def toMap(value : Value): Map[String, Any]
   }
@@ -14,10 +20,16 @@ package object map_representation {
     def apply[T:MapRepresentation]: MapRepresentation[T] = implicitly[MapRepresentation[T]]
   }
 
-  trait ValueRepresentation[V]{
+  /*
+    Auxiliary type class for representing values when an enclosing object is converted to a Map[String, Any]
+   */
+  trait ValueRepresentation[-V]{
     def toValue(value : V): Any
   }
 
+  /*
+    Auxiliary type class for key types that will be converted to String keys if an enclosing Map is converted to a Map[String, Any]
+   */
   trait KeyRepresentation[V]{
     def toKey(key: V): String
   }
@@ -39,10 +51,19 @@ package object map_representation {
     override def toKey(key: Symbol): String = key.name
   }
 
-  implicit def seqValueRepresentation[V](implicit packageableContents: MapRepresentation[V]): ValueRepresentation[Seq[V]] = new ValueRepresentation[Seq[V]] {
+  //TODO: Figure out how to abstract from the collection class and DRY up with the Set case
+  implicit def traversableValueRepresentation[V](implicit packageableContents: ValueRepresentation[V]): ValueRepresentation[Seq[V]] = new ValueRepresentation[Seq[V]] {
     override def toValue(value: Seq[V]): Any = {
       value map { element =>
-        packageableContents toMap element
+        packageableContents toValue element
+      }
+    }
+  }
+  //TODO: Figure out how to abstract from the collection class and DRY up with the Seq case
+  implicit def setValueRepresentation[V](implicit packageableContents: ValueRepresentation[V]): ValueRepresentation[Set[V]] = new ValueRepresentation[Set[V]] {
+    override def toValue(value: Set[V]): Any = {
+      value map { element =>
+        packageableContents toValue element
       }
     }
   }
