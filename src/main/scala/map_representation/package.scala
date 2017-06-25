@@ -17,6 +17,9 @@ package object map_representation {
   }
 
   object MapRepresentation{
+    /*
+      Factory method to allow summoning an instance of the type class ad hoc.
+    */
     def apply[T:MapRepresentation]: MapRepresentation[T] = implicitly[MapRepresentation[T]]
   }
 
